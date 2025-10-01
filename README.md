@@ -16,7 +16,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 Stage
 
 # Next.js 15 Multi-Vendor E-commerce Folder Structure for TerraMartz
-```terramartz/
+```
+terramartz/
 ├── src/
 │   ├── app/
 │   │   ├── (storefront)/                 # Public-facing pages (SSR, SEO)
@@ -79,6 +80,7 @@ Stage
 │   │   │   ├── components/               # Global reusable components
 │   │   │   ├── hooks/                    # Global custom hooks
 │   │   │   ├── utils/                    # Global utility functions
+│   │   │   ├── contexts/                    # Global Contents
 │   │   │   ├── types/                    # Global TypeScript types
 │   │   │   └── constants/                # Global constants
 │   │   │
