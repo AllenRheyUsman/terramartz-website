@@ -1,9 +1,15 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  sendEmailOtp,
+  sendPhoneOtp,
+  signup,
+  verifyEmailOtp,
+  verifyPhoneOtp,
+} from '@/modules/core/actions/auth.action';
 import { Button } from '@/modules/core/components/ui/button';
 import { Card, CardContent } from '@/modules/core/components/ui/card';
 import { Checkbox } from '@/modules/core/components/ui/checkbox';
-import { signup, sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp } from "@/modules/core/auth/auth.action";
 import {
   Dialog,
   DialogContent,
@@ -31,8 +37,8 @@ import {
   Users,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface SellerSignUpPageProps {
   onBack: () => void;
@@ -41,7 +47,6 @@ interface SellerSignUpPageProps {
 }
 
 export default function SellerSignUpPage({
-  onBack,
   onSignUp,
   onSignIn,
 }: SellerSignUpPageProps) {
@@ -80,31 +85,30 @@ export default function SellerSignUpPage({
     e.preventDefault();
 
     if (signUpData.password !== signUpData.confirmPassword) {
-      alert("Passwords do not match");
+      alert('Passwords do not match');
       return;
     }
     if (!signUpData.agreeTerms) {
-      alert("Please agree to the terms and conditions");
+      alert('Please agree to the terms and conditions');
       return;
     }
 
     try {
       if (signUpData.phone) {
         const otpRes = await sendPhoneOtp(signUpData.phone);
-        if (!otpRes) throw new Error("Failed to send OTP to phone");
-        setOtpMethod("phone");
+        if (!otpRes) throw new Error('Failed to send OTP to phone');
+        setOtpMethod('phone');
       } else {
         const otpRes = await sendEmailOtp(signUpData.email);
-        if (!otpRes) throw new Error("Failed to send OTP to email");
-        setOtpMethod("email");
+        if (!otpRes) throw new Error('Failed to send OTP to email');
+        setOtpMethod('email');
       }
 
       setPendingSignUpData(signUpData);
       setShowOTPModal(true);
-
     } catch (err: any) {
-      console.error("OTP send error:", err);
-      alert(err.message || "Something went wrong while sending OTP");
+      console.error('OTP send error:', err);
+      alert(err.message || 'Something went wrong while sending OTP');
     }
   };
 
@@ -142,49 +146,47 @@ export default function SellerSignUpPage({
     try {
       let verified = null;
 
-      if (otpMethod === "phone" && pendingSignUpData?.phone) {
+      if (otpMethod === 'phone' && pendingSignUpData?.phone) {
         verified = await verifyPhoneOtp(pendingSignUpData.phone, otp);
-      } else if (otpMethod === "email" && pendingSignUpData?.email) {
+      } else if (otpMethod === 'email' && pendingSignUpData?.email) {
         verified = await verifyEmailOtp(pendingSignUpData.email, otp);
       }
 
       if (!verified) {
-        throw new Error("Invalid OTP. Please try again.");
+        throw new Error('Invalid OTP. Please try again.');
       }
       const data = await signup(pendingSignUpData);
-      if (!data) throw new Error("Signup failed");
+      if (!data) throw new Error('Signup failed');
 
       setShowOTPModal(false);
-      alert("Signup successful!");
-      router.push("/vendor/dashboard");
+      alert('Signup successful!');
+      router.push('/vendor/dashboard');
       onSignUp(
         pendingSignUpData.email,
         pendingSignUpData.password,
-        pendingSignUpData.farmName
+        pendingSignUpData.farmName,
       );
-
     } catch (err: any) {
-      console.error("OTP verify error:", err);
-      setOtpError(err.message || "Verification failed");
+      console.error('OTP verify error:', err);
+      setOtpError(err.message || 'Verification failed');
     } finally {
       setIsVerifying(false);
     }
   };
 
-
   const resendOTP = async () => {
-    setOtpCode(["", "", "", "", "", ""]);
-    setOtpError("");
+    setOtpCode(['', '', '', '', '', '']);
+    setOtpError('');
 
     try {
-      if (otpMethod === "phone" && pendingSignUpData?.phone) {
+      if (otpMethod === 'phone' && pendingSignUpData?.phone) {
         await sendPhoneOtp(pendingSignUpData.phone);
-      } else if (otpMethod === "email" && pendingSignUpData?.email) {
+      } else if (otpMethod === 'email' && pendingSignUpData?.email) {
         await sendEmailOtp(pendingSignUpData.email);
       }
-      alert(`OTP resent to your ${otpMethod === "email" ? "email" : "phone"}`);
+      alert(`OTP resent to your ${otpMethod === 'email' ? 'email' : 'phone'}`);
     } catch (err: any) {
-      alert(err.message || "Failed to resend OTP");
+      alert(err.message || 'Failed to resend OTP');
     }
   };
 
@@ -665,10 +667,11 @@ export default function SellerSignUpPage({
             {/* Method indicator */}
             <div className="text-center">
               <div
-                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${otpMethod === 'email'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-green-100 text-green-600'
-                  }`}
+                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+                  otpMethod === 'email'
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'bg-green-100 text-green-600'
+                }`}
               >
                 {otpMethod === 'email' ? (
                   <Mail className="w-8 h-8" />
