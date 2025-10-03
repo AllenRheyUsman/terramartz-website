@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import { ImageWithFallback } from '@/modules/core/components/ImageWithFallback';
+import { ImageWithFallback } from '@/modules/core/components/common/ImageWithFallback';
 import LocalMapPage from '@/modules/core/components/LocalMapPage';
 import { Badge } from '@/modules/core/components/ui/badge';
 import { Button } from '@/modules/core/components/ui/button';

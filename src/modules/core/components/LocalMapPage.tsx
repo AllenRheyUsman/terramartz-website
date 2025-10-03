@@ -1,4 +1,4 @@
-import { ImageWithFallback } from '@/modules/core/components/ImageWithFallback';
+import { ImageWithFallback } from '@/modules/core/components/common/ImageWithFallback';
 import Farm from '@/modules/core/types/farms';
 import { Product } from '@/modules/core/types/product';
 import {
