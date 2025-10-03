@@ -14,3 +14,10 @@ export interface Product {
   reviews?: number;
   farmId?: number;
 }
+
+export interface ProductWithSellerData extends Product {
+  stock: number;
+  status: 'in-stock' | 'out-of-stock';
+  sales: number;
+  views: number;
+}

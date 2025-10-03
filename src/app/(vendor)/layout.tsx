@@ -8,14 +8,14 @@ export const metadata: Metadata = {
   description: 'Multi-vendor storefront powered by Next.js 15',
 };
 
-export default function StorefrontLayout({
+export default function VendorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header isSignedIn={true} />
       <main>{children}</main>
       <Footer />
     </div>
