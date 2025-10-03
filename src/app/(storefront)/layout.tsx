@@ -1,5 +1,3 @@
-import Footer from '@/modules/core/components/storefront/Footer';
-import Header from '@/modules/core/components/storefront/Header';
 import '@/styles/themes/storefront.css';
 import type { Metadata } from 'next';
 
@@ -13,11 +11,5 @@ export default function StorefrontLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-white">
-      <Header />
-      <main>{children}</main>
-      <Footer />
-    </div>
-  );
+  return <>{children}</>;
 }
