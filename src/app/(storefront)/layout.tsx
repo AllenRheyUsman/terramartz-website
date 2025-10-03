@@ -1,5 +1,5 @@
-import Footer from '@/modules/storefront/components/Footer';
-import Header from '@/modules/storefront/components/Header';
+import Footer from '@/modules/core/components/storefront/Footer';
+import Header from '@/modules/core/components/storefront/Header';
 import '@/styles/themes/storefront.css';
 import type { Metadata } from 'next';
 

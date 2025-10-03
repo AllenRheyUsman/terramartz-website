@@ -3,6 +3,7 @@
 import { Button } from '@/modules/core/components/ui/button';
 import { Card, CardContent } from '@/modules/core/components/ui/card';
 import { Checkbox } from '@/modules/core/components/ui/checkbox';
+import { signup, sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp } from "@/modules/core/auth/auth.action";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface SellerSignUpPageProps {
   onBack: () => void;
@@ -43,6 +45,7 @@ export default function SellerSignUpPage({
   onSignUp,
   onSignIn,
 }: SellerSignUpPageProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'signup' | 'signin'>('signup');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -54,7 +57,6 @@ export default function SellerSignUpPage({
   const [isVerifying, setIsVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [pendingSignUpData, setPendingSignUpData] = useState<any>(null);
-
   // Sign Up Form State
   const [signUpData, setSignUpData] = useState({
     farmName: '',
@@ -74,21 +76,36 @@ export default function SellerSignUpPage({
     rememberMe: false,
   });
 
-  const handleSignUpSubmit = (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (signUpData.password !== signUpData.confirmPassword) {
-      alert('Passwords do not match');
+      alert("Passwords do not match");
       return;
     }
     if (!signUpData.agreeTerms) {
-      alert('Please agree to the terms and conditions');
+      alert("Please agree to the terms and conditions");
       return;
     }
 
-    // Store the sign up data and show OTP modal
-    setPendingSignUpData(signUpData);
-    setOtpMethod(signUpData.phone ? 'phone' : 'email');
-    setShowOTPModal(true);
+    try {
+      if (signUpData.phone) {
+        const otpRes = await sendPhoneOtp(signUpData.phone);
+        if (!otpRes) throw new Error("Failed to send OTP to phone");
+        setOtpMethod("phone");
+      } else {
+        const otpRes = await sendEmailOtp(signUpData.email);
+        if (!otpRes) throw new Error("Failed to send OTP to email");
+        setOtpMethod("email");
+      }
+
+      setPendingSignUpData(signUpData);
+      setShowOTPModal(true);
+
+    } catch (err: any) {
+      console.error("OTP send error:", err);
+      alert(err.message || "Something went wrong while sending OTP");
+    }
   };
 
   const handleOTPChange = (index: number, value: string) => {
@@ -122,32 +139,53 @@ export default function SellerSignUpPage({
     setIsVerifying(true);
     setOtpError('');
 
-    // Simulate OTP verification (in real app, verify with backend)
-    setTimeout(() => {
-      if (otp === '123456') {
-        // Demo OTP code
-        setIsVerifying(false);
-        setShowOTPModal(false);
-        // Proceed with sign up
-        onSignUp(
-          pendingSignUpData.email,
-          pendingSignUpData.password,
-          pendingSignUpData.farmName,
-        );
-      } else {
-        setIsVerifying(false);
-        setOtpError('Invalid OTP code. Try again or use 123456 for demo.');
+    try {
+      let verified = null;
+
+      if (otpMethod === "phone" && pendingSignUpData?.phone) {
+        verified = await verifyPhoneOtp(pendingSignUpData.phone, otp);
+      } else if (otpMethod === "email" && pendingSignUpData?.email) {
+        verified = await verifyEmailOtp(pendingSignUpData.email, otp);
       }
-    }, 2000);
+
+      if (!verified) {
+        throw new Error("Invalid OTP. Please try again.");
+      }
+      const data = await signup(pendingSignUpData);
+      if (!data) throw new Error("Signup failed");
+
+      setShowOTPModal(false);
+      alert("Signup successful!");
+      router.push("/vendor/dashboard");
+      onSignUp(
+        pendingSignUpData.email,
+        pendingSignUpData.password,
+        pendingSignUpData.farmName
+      );
+
+    } catch (err: any) {
+      console.error("OTP verify error:", err);
+      setOtpError(err.message || "Verification failed");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
-  const resendOTP = () => {
-    setOtpCode(['', '', '', '', '', '']);
-    setOtpError('');
-    // In real app, trigger OTP resend
-    alert(
-      `OTP resent to your ${otpMethod === 'email' ? 'email' : 'phone number'}`,
-    );
+
+  const resendOTP = async () => {
+    setOtpCode(["", "", "", "", "", ""]);
+    setOtpError("");
+
+    try {
+      if (otpMethod === "phone" && pendingSignUpData?.phone) {
+        await sendPhoneOtp(pendingSignUpData.phone);
+      } else if (otpMethod === "email" && pendingSignUpData?.email) {
+        await sendEmailOtp(pendingSignUpData.email);
+      }
+      alert(`OTP resent to your ${otpMethod === "email" ? "email" : "phone"}`);
+    } catch (err: any) {
+      alert(err.message || "Failed to resend OTP");
+    }
   };
 
   const switchOTPMethod = () => {
@@ -627,11 +665,10 @@ export default function SellerSignUpPage({
             {/* Method indicator */}
             <div className="text-center">
               <div
-                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-                  otpMethod === 'email'
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'bg-green-100 text-green-600'
-                }`}
+                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${otpMethod === 'email'
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'bg-green-100 text-green-600'
+                  }`}
               >
                 {otpMethod === 'email' ? (
                   <Mail className="w-8 h-8" />
