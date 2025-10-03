@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 import { cookies } from "next/headers";
 
@@ -28,7 +29,7 @@ export async function signup(userData: any) {
         secure: true,
         sameSite: "strict",
         path: "/",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7, // 7 days test it with the good
       });
       // console.log("🍪 Token saved in cookie");
     }
