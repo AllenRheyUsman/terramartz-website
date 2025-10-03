@@ -1,5 +1,5 @@
 import Footer from '@/modules/core/components/storefront/Footer';
-import SignUpInPlaneHeder from '@/modules/core/components/storefront/components/SignUpInPlaneHeder';
+import SignUpInPlaneHeder from '@/modules/core/components/storefront/SignUpInPlaneHeder';
 import '@/styles/themes/storefront.css';
 import type { Metadata } from 'next';
 
