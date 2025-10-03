@@ -91,29 +91,8 @@ terramartz/
 │   │   │   ├── ui.slice.ts               # UI state (theme, sidebar, etc.)
 │   │   │   ├── cart.slice.ts             # Cart state
 │   │   │   ├── product.slice.ts          # Product state
-│   │   │   └── vendor.slice.ts           # Vendor state
-│   │   │
-│   │   ├── products/                     # Product feature module
-│   │   │   ├── components/ProductCard.tsx
-│   │   │   ├── hooks/useProducts.ts
-│   │   │   ├── services/products.service.ts
-│   │   │   ├── actions/products.actions.ts
-│   │   │   ├── types/product.types.ts
-│   │   │   └── utils/product.utils.ts
-│   │   │
-│   │   ├── vendors/                      # Vendors feature module
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   ├── services/
-│   │   │   ├── actions/
-│   │   │   ├── types/
-│   │   │   └── utils/
-│   │   │
-│   │   └── storefront/                   # Storefront feature module
-│   │       ├── components/
-│   │       │   ├── header/
-│   │       │   └── footer/
-│   │       └── types/
+│   │       └── vendor.slice.ts           # Vendor state
+│   │
 │   │
 │   ├── middleware.ts                     # Root middleware
 │   │
