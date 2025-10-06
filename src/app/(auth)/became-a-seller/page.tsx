@@ -42,7 +42,28 @@ import {
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 
+const signUpSchema = yup.object({
+  farmName: yup.string().required('Farm or business name is required'),
+  email: yup.string().email('Invalid email').required('Email is required'),
+  phone: yup.string().matches(/^[0-9+\-()\s]*$/, 'Invalid phone number').nullable(),
+  location: yup.string(),
+  password: yup.string().required('Password is required').min(6, 'At least 6 characters'),
+  confirmPassword: yup.string()
+    .oneOf([yup.ref('password')], 'Passwords must match')
+    .required('Confirm password is required'),
+  agreeTerms: yup.boolean(),
+  agreeMarketing: yup.boolean(),
+});
+
+const signInSchema = yup.object({
+  email: yup.string().email('Invalid email address').required('Email is required'),
+  password: yup.string().required('Password is required'),
+  rememberMe: yup.boolean(),
+});
 interface SellerSignUpPageProps {
   onBack: () => void;
   onSignUp: (email: string, password: string, farmName: string) => void;
@@ -68,53 +89,61 @@ export default function SellerSignUpPage({
   const [pendingSignUpData, setPendingSignUpData] = useState<any>(null);
   // Sign Up Form State
   const [signUpData, setSignUpData] = useState({
-    farmName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    location: '',
     agreeTerms: false,
     agreeMarketing: false,
   });
 
-  // Sign In Form State
   const [signInData, setSignInData] = useState({
-    email: '',
-    password: '',
     rememberMe: false,
   });
 
-  const handleSignUpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // React Hook Form setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(signUpSchema),
+    mode: 'onChange',
+  });
 
-    if (signUpData.password !== signUpData.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-    if (!signUpData.agreeTerms) {
-      alert('Please agree to the terms and conditions');
-      return;
-    }
+  const {
+    register: registerSignIn,
+    handleSubmit: handleSignIn,
+    formState: { errors: signInErrors },
+  } = useForm({
+    resolver: yupResolver(signInSchema),
+    mode: 'onChange',
+  });
+
+  const handleSignUpSubmit = async (data: any) => {
+    // merge the local checkbox state into the form data
+    const mergedData = {
+      ...data,
+      agreeTerms: signUpData.agreeTerms,
+      agreeMarketing: signUpData.agreeMarketing,
+    };
 
     try {
-      if (signUpData.phone) {
-        const otpRes = await sendPhoneOtp(signUpData.phone);
+      if (mergedData.phone) {
+        const otpRes = await sendPhoneOtp(mergedData.phone);
         if (!otpRes) throw new Error('Failed to send OTP to phone');
         setOtpMethod('phone');
       } else {
-        const otpRes = await sendEmailOtp(signUpData.email);
+        const otpRes = await sendEmailOtp(mergedData.email);
         if (!otpRes) throw new Error('Failed to send OTP to email');
         setOtpMethod('email');
       }
 
-      setPendingSignUpData(signUpData);
+      setPendingSignUpData(mergedData);
       setShowOTPModal(true);
     } catch (err: any) {
       console.error('OTP send error:', err);
       alert(err.message || 'Something went wrong while sending OTP');
     }
   };
+
+
 
   const handleOTPChange = (index: number, value: string) => {
     if (value.length > 1) return; // Only allow single digit
@@ -217,22 +246,29 @@ export default function SellerSignUpPage({
     }
   };
 
-  const handleSignInSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignInSubmit = async (data: any) => {
+    const mergedData = {
+      ...data,
+      rememberMe: signInData.rememberMe,
+    };
+    try {
+      const result = await login({
+        email: data.email,
+        password: data.password,
+      });
 
-    const result = await login({
-      email: signInData.email,
-      password: signInData.password,
-    });
-    if (result?.status === 'success') {
-      alert('Signin successful!');
-      dispatch(setUser(result?.data?.user));
-      router.push('/vendor/dashboard');
-    } else {
-      console.log(result?.error || 'Login failed');
+      if (result?.status === 'success') {
+        alert('Signin successful!');
+        dispatch(setUser(result?.data?.user));
+        router.push('/vendor/dashboard');
+      } else {
+        alert(result?.error || 'Invalid email or password');
+      }
+    } catch (err: any) {
+      console.error('Sign-in error:', err);
+      alert(err.message || 'An error occurred during sign-in');
     }
   };
-
   const benefits = [
     {
       icon: TrendingUp,
@@ -369,23 +405,19 @@ export default function SellerSignUpPage({
                       </p>
                     </div>
 
-                    <form onSubmit={handleSignUpSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit(handleSignUpSubmit)} className="space-y-4">
                       <div>
                         <Label htmlFor="farmName">Farm/Business Name *</Label>
                         <Input
                           id="farmName"
                           type="text"
                           placeholder="e.g., Green Valley Farm"
-                          value={signUpData.farmName}
-                          onChange={(e) =>
-                            setSignUpData({
-                              ...signUpData,
-                              farmName: e.target.value,
-                            })
-                          }
-                          required
+                          {...register('farmName')}
                           className="mt-1"
                         />
+                        {errors.farmName && (
+                          <p className="text-red-500 text-sm mt-1">{errors.farmName.message}</p>
+                        )}
                       </div>
 
                       <div>
@@ -394,18 +426,13 @@ export default function SellerSignUpPage({
                           id="email"
                           type="email"
                           placeholder="your@email.com"
-                          value={signUpData.email}
-                          onChange={(e) =>
-                            setSignUpData({
-                              ...signUpData,
-                              email: e.target.value,
-                            })
-                          }
-                          required
+                          {...register('email')}
                           className="mt-1"
                         />
+                        {errors.email && (
+                          <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                        )}
                       </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="phone">Phone Number</Label>
@@ -413,15 +440,12 @@ export default function SellerSignUpPage({
                             id="phone"
                             type="tel"
                             placeholder="+1 (555) 123-4567"
-                            value={signUpData.phone}
-                            onChange={(e) =>
-                              setSignUpData({
-                                ...signUpData,
-                                phone: e.target.value,
-                              })
-                            }
+                            {...register('phone')}
                             className="mt-1"
                           />
+                          {errors.phone && (
+                            <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="location">Location</Label>
@@ -429,15 +453,12 @@ export default function SellerSignUpPage({
                             id="location"
                             type="text"
                             placeholder="City, State"
-                            value={signUpData.location}
-                            onChange={(e) =>
-                              setSignUpData({
-                                ...signUpData,
-                                location: e.target.value,
-                              })
-                            }
+                            {...register('location')}
                             className="mt-1"
                           />
+                          {errors.location && (
+                            <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
+                          )}
                         </div>
                       </div>
 
@@ -448,14 +469,7 @@ export default function SellerSignUpPage({
                             id="password"
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Create a strong password"
-                            value={signUpData.password}
-                            onChange={(e) =>
-                              setSignUpData({
-                                ...signUpData,
-                                password: e.target.value,
-                              })
-                            }
-                            required
+                            {...register('password')}
                             className="pr-10"
                           />
                           <button
@@ -470,32 +484,24 @@ export default function SellerSignUpPage({
                             )}
                           </button>
                         </div>
+                        {errors.password && (
+                          <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                        )}
                       </div>
 
                       <div>
-                        <Label htmlFor="confirmPassword">
-                          Confirm Password *
-                        </Label>
+                        <Label htmlFor="confirmPassword">Confirm Password *</Label>
                         <div className="relative mt-1">
                           <Input
                             id="confirmPassword"
                             type={showConfirmPassword ? 'text' : 'password'}
                             placeholder="Confirm your password"
-                            value={signUpData.confirmPassword}
-                            onChange={(e) =>
-                              setSignUpData({
-                                ...signUpData,
-                                confirmPassword: e.target.value,
-                              })
-                            }
-                            required
+                            {...register('confirmPassword')}
                             className="pr-10"
                           />
                           <button
                             type="button"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
                             {showConfirmPassword ? (
@@ -505,6 +511,9 @@ export default function SellerSignUpPage({
                             )}
                           </button>
                         </div>
+                        {errors.confirmPassword && (
+                          <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                        )}
                       </div>
 
                       <div className="space-y-3">
@@ -520,10 +529,7 @@ export default function SellerSignUpPage({
                             }
                             className="mt-1"
                           />
-                          <Label
-                            htmlFor="agreeTerms"
-                            className="text-sm leading-relaxed"
-                          >
+                          <Label htmlFor="agreeTerms" className="text-sm leading-relaxed">
                             I agree to the{' '}
                             <span className="text-green-600 hover:underline cursor-pointer">
                               Terms of Service
@@ -547,15 +553,12 @@ export default function SellerSignUpPage({
                             }
                             className="mt-1"
                           />
-                          <Label
-                            htmlFor="agreeMarketing"
-                            className="text-sm leading-relaxed"
-                          >
-                            I would like to receive marketing emails about new
-                            features and seller tips
+                          <Label htmlFor="agreeMarketing" className="text-sm leading-relaxed">
+                            I would like to receive marketing emails about new features and seller tips
                           </Label>
                         </div>
                       </div>
+
 
                       <Button
                         type="submit"
@@ -578,23 +581,20 @@ export default function SellerSignUpPage({
                       </p>
                     </div>
 
-                    <form onSubmit={handleSignInSubmit} className="space-y-4">
+                    <form onSubmit={handleSignIn(handleSignInSubmit)} className="space-y-4">
+
                       <div>
                         <Label htmlFor="signinEmail">Email Address</Label>
                         <Input
                           id="signinEmail"
                           type="email"
                           placeholder="your@email.com"
-                          value={signInData.email}
-                          onChange={(e) =>
-                            setSignInData({
-                              ...signInData,
-                              email: e.target.value,
-                            })
-                          }
-                          required
+                          {...registerSignIn('email')}
                           className="mt-1"
                         />
+                        {signInErrors.email && (
+                          <p className="text-red-500 text-sm mt-1">{signInErrors.email.message}</p>
+                        )}
                       </div>
 
                       <div>
@@ -604,16 +604,12 @@ export default function SellerSignUpPage({
                             id="signinPassword"
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Enter your password"
-                            value={signInData.password}
-                            onChange={(e) =>
-                              setSignInData({
-                                ...signInData,
-                                password: e.target.value,
-                              })
-                            }
-                            required
+                            {...registerSignIn('password')}
                             className="pr-10"
                           />
+                          {signInErrors.password && (
+                            <p className="text-red-500 text-sm mt-1">{signInErrors.password.message}</p>
+                          )}
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
@@ -644,6 +640,7 @@ export default function SellerSignUpPage({
                             Remember me
                           </Label>
                         </div>
+
                         <span className="text-sm text-green-600 hover:underline cursor-pointer">
                           Forgot password?
                         </span>
