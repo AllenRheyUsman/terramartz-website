@@ -1,9 +1,16 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  sendEmailOtp,
+  sendPhoneOtp,
+  signup,
+  login,
+  verifyEmailOtp,
+  verifyPhoneOtp,
+} from '@/modules/core/actions/auth.action';
 import { Button } from '@/modules/core/components/ui/button';
 import { Card, CardContent } from '@/modules/core/components/ui/card';
 import { Checkbox } from '@/modules/core/components/ui/checkbox';
-import { signup, sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp } from "@/modules/core/auth/auth.action";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +25,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/modules/core/components/ui/tabs';
+import { useAppDispatch } from '@/store';
+import { setUser } from '@/store/slices/auth.slice';
 
 import {
   CheckCircle,
@@ -31,8 +40,8 @@ import {
   Users,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface SellerSignUpPageProps {
   onBack: () => void;
@@ -41,10 +50,10 @@ interface SellerSignUpPageProps {
 }
 
 export default function SellerSignUpPage({
-  onBack,
   onSignUp,
   onSignIn,
 }: SellerSignUpPageProps) {
+  const dispatch = useAppDispatch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'signup' | 'signin'>('signup');
   const [showPassword, setShowPassword] = useState(false);
@@ -80,31 +89,30 @@ export default function SellerSignUpPage({
     e.preventDefault();
 
     if (signUpData.password !== signUpData.confirmPassword) {
-      alert("Passwords do not match");
+      alert('Passwords do not match');
       return;
     }
     if (!signUpData.agreeTerms) {
-      alert("Please agree to the terms and conditions");
+      alert('Please agree to the terms and conditions');
       return;
     }
 
     try {
       if (signUpData.phone) {
         const otpRes = await sendPhoneOtp(signUpData.phone);
-        if (!otpRes) throw new Error("Failed to send OTP to phone");
-        setOtpMethod("phone");
+        if (!otpRes) throw new Error('Failed to send OTP to phone');
+        setOtpMethod('phone');
       } else {
         const otpRes = await sendEmailOtp(signUpData.email);
-        if (!otpRes) throw new Error("Failed to send OTP to email");
-        setOtpMethod("email");
+        if (!otpRes) throw new Error('Failed to send OTP to email');
+        setOtpMethod('email');
       }
 
       setPendingSignUpData(signUpData);
       setShowOTPModal(true);
-
     } catch (err: any) {
-      console.error("OTP send error:", err);
-      alert(err.message || "Something went wrong while sending OTP");
+      console.error('OTP send error:', err);
+      alert(err.message || 'Something went wrong while sending OTP');
     }
   };
 
@@ -142,49 +150,62 @@ export default function SellerSignUpPage({
     try {
       let verified = null;
 
-      if (otpMethod === "phone" && pendingSignUpData?.phone) {
+      if (otpMethod === 'phone' && pendingSignUpData?.phone) {
         verified = await verifyPhoneOtp(pendingSignUpData.phone, otp);
-      } else if (otpMethod === "email" && pendingSignUpData?.email) {
+      } else if (otpMethod === 'email' && pendingSignUpData?.email) {
         verified = await verifyEmailOtp(pendingSignUpData.email, otp);
       }
 
       if (!verified) {
-        throw new Error("Invalid OTP. Please try again.");
-      }
-      const data = await signup(pendingSignUpData);
-      if (!data) throw new Error("Signup failed");
+        throw new Error('Invalid OTP. Please try again.');
+      } const signupPayload = {
+        businessDetails: {
+          businessName: pendingSignUpData.farmName,
+          businessLocation: pendingSignUpData.location,
+        },
+        email: pendingSignUpData.email,
+        phoneNumber: pendingSignUpData.phone || null,
+        password: pendingSignUpData.password,
+        passwordConfirm: pendingSignUpData.confirmPassword,
+        termsAccepted: pendingSignUpData.agreeTerms,
+        receiveMarketingEmails: pendingSignUpData.agreeMarketing,
+        role: 'seller',
+        accountType: 'business',
+      };
 
+      console.log("Sending signup data:", signupPayload);
+      const data = await signup(signupPayload);
+      if (!data) throw new Error('Signup failed');
+      dispatch(setUser(data.data.user));
       setShowOTPModal(false);
-      alert("Signup successful!");
-      router.push("/vendor/dashboard");
+      alert('Signup successful!');
+      router.push('/vendor/dashboard');
       onSignUp(
         pendingSignUpData.email,
         pendingSignUpData.password,
-        pendingSignUpData.farmName
+        pendingSignUpData.farmName,
       );
-
     } catch (err: any) {
-      console.error("OTP verify error:", err);
-      setOtpError(err.message || "Verification failed");
+      console.error('OTP verify error:', err);
+      setOtpError(err.message || 'Verification failed');
     } finally {
       setIsVerifying(false);
     }
   };
 
-
   const resendOTP = async () => {
-    setOtpCode(["", "", "", "", "", ""]);
-    setOtpError("");
+    setOtpCode(['', '', '', '', '', '']);
+    setOtpError('');
 
     try {
-      if (otpMethod === "phone" && pendingSignUpData?.phone) {
+      if (otpMethod === 'phone' && pendingSignUpData?.phone) {
         await sendPhoneOtp(pendingSignUpData.phone);
-      } else if (otpMethod === "email" && pendingSignUpData?.email) {
+      } else if (otpMethod === 'email' && pendingSignUpData?.email) {
         await sendEmailOtp(pendingSignUpData.email);
       }
-      alert(`OTP resent to your ${otpMethod === "email" ? "email" : "phone"}`);
+      alert(`OTP resent to your ${otpMethod === 'email' ? 'email' : 'phone'}`);
     } catch (err: any) {
-      alert(err.message || "Failed to resend OTP");
+      alert(err.message || 'Failed to resend OTP');
     }
   };
 
@@ -196,9 +217,20 @@ export default function SellerSignUpPage({
     }
   };
 
-  const handleSignInSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSignIn(signInData.email, signInData.password);
+
+    const result = await login({
+      email: signInData.email,
+      password: signInData.password,
+    });
+    if (result?.status === 'success') {
+      alert('Signin successful!');
+      dispatch(setUser(result?.data?.user));
+      router.push('/vendor/dashboard');
+    } else {
+      console.log(result?.error || 'Login failed');
+    }
   };
 
   const benefits = [
