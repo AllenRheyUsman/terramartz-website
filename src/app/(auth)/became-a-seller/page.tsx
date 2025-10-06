@@ -4,6 +4,7 @@ import {
   sendEmailOtp,
   sendPhoneOtp,
   signup,
+  login,
   verifyEmailOtp,
   verifyPhoneOtp,
 } from '@/modules/core/actions/auth.action';
@@ -24,6 +25,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/modules/core/components/ui/tabs';
+import { useAppDispatch } from '@/store';
+import { setUser } from '@/store/slices/auth.slice';
 
 import {
   CheckCircle,
@@ -50,6 +53,7 @@ export default function SellerSignUpPage({
   onSignUp,
   onSignIn,
 }: SellerSignUpPageProps) {
+  const dispatch = useAppDispatch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'signup' | 'signin'>('signup');
   const [showPassword, setShowPassword] = useState(false);
@@ -154,10 +158,25 @@ export default function SellerSignUpPage({
 
       if (!verified) {
         throw new Error('Invalid OTP. Please try again.');
-      }
-      const data = await signup(pendingSignUpData);
-      if (!data) throw new Error('Signup failed');
+      } const signupPayload = {
+        businessDetails: {
+          businessName: pendingSignUpData.farmName,
+          businessLocation: pendingSignUpData.location,
+        },
+        email: pendingSignUpData.email,
+        phoneNumber: pendingSignUpData.phone || null,
+        password: pendingSignUpData.password,
+        passwordConfirm: pendingSignUpData.confirmPassword,
+        termsAccepted: pendingSignUpData.agreeTerms,
+        receiveMarketingEmails: pendingSignUpData.agreeMarketing,
+        role: 'seller',
+        accountType: 'business',
+      };
 
+      console.log("Sending signup data:", signupPayload);
+      const data = await signup(signupPayload);
+      if (!data) throw new Error('Signup failed');
+      dispatch(setUser(data.data.user));
       setShowOTPModal(false);
       alert('Signup successful!');
       router.push('/vendor/dashboard');
@@ -198,9 +217,20 @@ export default function SellerSignUpPage({
     }
   };
 
-  const handleSignInSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSignIn(signInData.email, signInData.password);
+
+    const result = await login({
+      email: signInData.email,
+      password: signInData.password,
+    });
+    if (result?.status === 'success') {
+      alert('Signin successful!');
+      dispatch(setUser(result?.data?.user));
+      router.push('/vendor/dashboard');
+    } else {
+      console.log(result?.error || 'Login failed');
+    }
   };
 
   const benefits = [
@@ -667,11 +697,10 @@ export default function SellerSignUpPage({
             {/* Method indicator */}
             <div className="text-center">
               <div
-                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-                  otpMethod === 'email'
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'bg-green-100 text-green-600'
-                }`}
+                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${otpMethod === 'email'
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'bg-green-100 text-green-600'
+                  }`}
               >
                 {otpMethod === 'email' ? (
                   <Mail className="w-8 h-8" />
