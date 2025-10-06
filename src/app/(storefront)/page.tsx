@@ -1,7 +1,17 @@
-export default function StorefrontHome() {
+import LocalMap from '@/modules/core/components/LocalMap';
+import BestSellers from '@/modules/core/components/storefront/BestSellerSection';
+import CategoriesSection from '@/modules/core/components/storefront/CategoriesSection';
+import FeaturedProductsSection from '@/modules/core/components/storefront/FeaturedProductsSection';
+import HeroBanner from '@/modules/core/components/storefront/HeroBanner';
+
+export default async function Storefront({}) {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-bold">🛍️ Storefront Product Page</h1>
-    </div>
+    <>
+      <HeroBanner />
+      <CategoriesSection />
+      <FeaturedProductsSection />
+      <BestSellers />
+      <LocalMap />
+    </>
   );
 }
