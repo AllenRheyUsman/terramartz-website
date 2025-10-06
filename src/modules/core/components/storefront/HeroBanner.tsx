@@ -1,9 +1,12 @@
 'use client';
 import { Button } from '@/modules/core/components/ui/button';
-import { StorefrontProps } from '@/modules/core/types/storefront';
 import { motion } from 'motion/react';
+interface StorefrontProps {
+  onShopNow?: () => void;
+  onSellWithUs?: () => void;
+}
 
-export default function HeroBanner({
+export default function Storefront({
   onShopNow,
   onSellWithUs,
 }: StorefrontProps) {

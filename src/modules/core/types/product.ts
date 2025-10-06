@@ -13,6 +13,7 @@ export interface Product {
   rating?: number | 0;
   reviews?: number;
   farmId?: number;
+ inStock?: boolean;
 
 }
 

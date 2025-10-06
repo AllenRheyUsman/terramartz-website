@@ -1,3 +1,4 @@
+import LocalMap from '@/modules/core/components/LocalMap';
 import BestSellers from '@/modules/core/components/storefront/BestSellerSection';
 import CategoriesSection from '@/modules/core/components/storefront/CategoriesSection';
 import FeaturedProductsSection from '@/modules/core/components/storefront/FeaturedProductsSection';
@@ -10,6 +11,7 @@ export default async function Storefront({}) {
       <CategoriesSection />
       <FeaturedProductsSection />
       <BestSellers />
+      <LocalMap />
     </>
   );
 }

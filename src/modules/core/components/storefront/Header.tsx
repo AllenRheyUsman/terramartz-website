@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 import { Button } from '@/modules/core/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
@@ -76,7 +77,13 @@ export default function Header({
       handleSearchSubmit(e as React.FormEvent);
     }
   };
-
+  const navItems = [
+    { label: 'Home', href: '/' },
+    { label: 'About', href: '/about' },
+    { label: 'Categories', href: '/categories' },
+    { label: 'Product', href: '/products' },
+    { label: 'Contact', href: '/contact' },
+  ];
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b border-amber-100 shadow-sm">
       <div className="container mx-auto px-4 py-3">
@@ -107,38 +114,23 @@ export default function Header({
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {['Home', 'About', 'Categories', 'Product', 'Contact'].map(
-              (item) => (
-                <motion.button
-                  key={item}
-                  onClick={
-                    item === 'Home'
-                      ? onNavigateHome
-                      : item === 'About'
-                      ? onNavigateToAbout
-                      : item === 'Categories'
-                      ? onNavigateToCategories
-                      : item === 'Product'
-                      ? onNavigateToProducts
-                      : item === 'Contact'
-                      ? onNavigateToContact
-                      : undefined
-                  }
-                  className="text-gray-700 hover:text-amber-600 transition-colors duration-200 relative bg-transparent border-none cursor-pointer"
+            {navItems.map(({ label, href }) => (
+              <Link key={label} href={href} className="relative">
+                <motion.span
+                  className="text-gray-700 hover:text-amber-600 transition-colors duration-200 relative cursor-pointer"
                   whileHover={{ y: -2 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 >
-                  {item}
+                  {label}
                   <motion.div
                     className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500"
                     whileHover={{ width: '100%' }}
                     transition={{ duration: 0.2 }}
                   />
-                </motion.button>
-              ),
-            )}
+                </motion.span>
+              </Link>
+            ))}
           </nav>
-
           {/* Mobile Menu Button */}
           <div className="md:hidden">
             <Button

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import BestSellerStyleCard from '@/modules/core/components/common/BestSellerStyleCard';
 import OfferBannerHolder from '@/modules/core/components/common/OfferBannerHolder';
+import ProductCard from '@/modules/core/components/common/ProductCard';
 
 import { TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -103,11 +103,12 @@ export default function BestSellers({
                 transition: { type: 'spring', stiffness: 400, damping: 17 },
               }}
             >
-              <BestSellerStyleCard
+              <ProductCard
                 product={product}
                 index={index}
                 onProductClick={onProductClick}
                 onAddToCart={onAddToCart}
+                type="bestseller"
               />
             </motion.div>
           ))}

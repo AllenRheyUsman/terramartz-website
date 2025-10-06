@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import FeaturedProductCard from '@/modules/core/components/common/FeaturedProductStyleCard';
+import ProductCard from '@/modules/core/components/common/ProductCard';
 import { motion } from 'motion/react';
 
 const featuredProducts = [
@@ -139,7 +139,9 @@ export default function FeaturedProductsSection({
                 transition: { type: 'spring', stiffness: 400, damping: 17 },
               }}
             >
-              <FeaturedProductCard
+              <ProductCard
+                index={index}
+                type="featured"
                 product={product}
                 onProductClick={onProductClick}
                 onAddToCart={onAddToCart}
