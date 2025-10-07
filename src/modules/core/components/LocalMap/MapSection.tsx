@@ -6,13 +6,8 @@ import { Input } from '@/modules/core/components/ui/input';
 import { useLocalMap } from '@/modules/core/contexts/LocalMapContext';
 import { Filter, MapPin, Search } from 'lucide-react';
 import { motion } from 'motion/react';
-export function MapSection({
-  farms,
-  onNavigateToLocalMap,
-}: {
-  farms: typeof mockFarms;
-  onNavigateToLocalMap?: () => void;
-}) {
+import Link from 'next/link';
+export function MapSection({ farms }: { farms: typeof mockFarms }) {
   const {
     selectedFarm,
     setSelectedFarm,
@@ -101,12 +96,14 @@ export function MapSection({
           </div>
 
           <div className="p-4 bg-white border-t border-amber-100">
-            <Button
-              onClick={onNavigateToLocalMap}
-              className="w-full bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-600 hover:to-amber-600 text-white"
-            >
-              View Full Map & More Farms
-            </Button>
+            <Link href="/local-marketplace">
+              <Button
+                style={{ cursor: 'pointer' }}
+                className="w-full bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-600 hover:to-amber-600 text-white"
+              >
+                View Full Map & More Farms
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
