@@ -41,12 +41,12 @@ export async function signup(userData: any) {
 }
 
 // ---- SEND PHONE ON OTP ----
-export async function sendPhoneOtp(phone: string) {
+export async function sendPhoneOtp(phoneNumber: string) {
   try {
     const res = await fetch(`${API_URL}/api/users/send-phone-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phoneNumber }),
       cache: "no-store",
     });
 
