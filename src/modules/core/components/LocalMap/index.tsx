@@ -9,10 +9,7 @@ import { MapSection } from './MapSection';
 import { StatsGrid } from './StatsGrid';
 import { mockFarms } from './mockData';
 
-export default function LocalMap({
-  onAddToCart,
-  onNavigateToLocalMap,
-}: LocalMapProps) {
+export default function LocalMap({ onAddToCart }: LocalMapProps) {
   const handleAddToCart = (product: Product) => {
     const button = document.getElementById(`add-to-cart-${product.id}`);
     if (button && onAddToCart) {
@@ -42,10 +39,7 @@ export default function LocalMap({
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
-            <MapSection
-              farms={mockFarms}
-              onNavigateToLocalMap={onNavigateToLocalMap}
-            />
+            <MapSection farms={mockFarms} />
             <div className="space-y-6">
               <FarmDetails onAddToCart={handleAddToCart} />
               <StatsGrid />
