@@ -1,14 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 import { Button } from '@/modules/core/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@radix-ui/react-dropdown-menu';
+} from '@/modules/core/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
+
 import {
   Badge,
   Bell,
@@ -195,26 +196,31 @@ export default function Header({
               whileTap={{ scale: 0.95 }}
               className="relative"
             >
-              <Button
-                ref={cartIconRef}
-                onClick={onNavigateToCart}
-                variant="ghost"
-                size="sm"
-                className="text-gray-700 hover:text-amber-600 hover:bg-amber-50 p-2"
-              >
-                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-                {cartCount > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                  >
-                    <Badge className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 p-0 flex items-center justify-center bg-green-500 text-white text-xs">
-                      {cartCount}
-                    </Badge>
-                  </motion.div>
-                )}
-              </Button>
+              <Link href={'/cart'}>
+                <Button
+                  ref={cartIconRef}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-700 hover:text-amber-600 hover:bg-amber-50 p-2"
+                >
+                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {cartCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 500,
+                        damping: 25,
+                      }}
+                    >
+                      <Badge className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 p-0 flex items-center justify-center bg-green-500 text-white text-xs">
+                        {cartCount}
+                      </Badge>
+                    </motion.div>
+                  )}
+                </Button>
+              </Link>
             </motion.div>
 
             {/* User Authentication */}
@@ -301,14 +307,15 @@ export default function Header({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button
-                    onClick={onNavigateToSignIn}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 text-sm px-3 py-2"
-                    size="sm"
-                  >
-                    <User className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Sign In</span>
-                  </Button>
+                  <Link href="/sign-in">
+                    <Button
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 text-sm px-3 py-2"
+                      size="sm"
+                    >
+                      <User className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Sign In</span>
+                    </Button>
+                  </Link>
                 </motion.div>
               </div>
             )}

@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import ProductCard from '@/modules/core/components/common/ProductCard';
+
 import { motion } from 'motion/react';
+import Link from 'next/link';
 
 const featuredProducts = [
   {
@@ -159,12 +161,12 @@ export default function FeaturedProductsSection({
           className="text-center mt-12"
         >
           <motion.button
+            style={{ cursor: 'pointer' }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onViewAllProducts}
             className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
-            View All Products
+            <Link href="/products">View All Products</Link>
           </motion.button>
         </motion.div>
       </div>
