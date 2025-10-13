@@ -1,5 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createProduct } from '@/modules/core/actions/product.action';
+import * as yup from 'yup';
 import { ImageWithFallback } from '@/modules/core/components/common/ImageWithFallback';
 import { Badge } from '@/modules/core/components/ui/badge';
 import { Button } from '@/modules/core/components/ui/button';
@@ -25,6 +27,27 @@ import { Plus, Save, Upload, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
 
+const productSchema = yup.object().shape({
+  name: yup.string().required('Product name is required'),
+  price: yup
+    .number()
+    .typeError('Price must be a number')
+    .positive('Price must be greater than 0')
+    .required('Price is required'),
+  originalPrice: yup
+    .number()
+    .typeError('Original price must be a number')
+    .nullable()
+    .transform((v, o) => (o === '' ? null : v)),
+  category: yup.string().required('Category is required'),
+  stock: yup
+    .number()
+    .typeError('Stock must be a number')
+    .integer('Stock must be an integer')
+    .min(0, 'Stock cannot be negative')
+    .required('Stock is required'),
+  description: yup.string().max(500, 'Description too long'),
+});
 interface AddProductPageProps {
   onBack?: () => void;
   onSave?: (productData: any) => void;
@@ -50,7 +73,9 @@ export default function AddProductPage({
 
   const [currentTag, setCurrentTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const categories = [
     'Vegetables',
     'Fruits',
@@ -106,6 +131,30 @@ export default function AddProductPage({
     }
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setIsUploading(true);
+    const newImages: string[] = [];
+    const newFiles: File[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      newFiles.push(file);
+      newImages.push(URL.createObjectURL(file));
+    }
+
+    setProductData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...newImages],
+    }));
+
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+
+    setIsUploading(false);
+  };
+
   const handleRemoveImage = (imageToRemove: string) => {
     setProductData((prev) => ({
       ...prev,
@@ -113,34 +162,88 @@ export default function AddProductPage({
     }));
   };
 
-  const handleSave = () => {
-    // Validate required fields
-    if (
-      !productData.name ||
-      !productData.price ||
-      !productData.category ||
-      !productData.stock
-    ) {
-      alert('Please fill in all required fields');
+  const handleSave = async () => {
+    try {
+      await productSchema.validate(productData, { abortEarly: false });
+      setErrors({});
+    } catch (validationError: any) {
+      const newErrors: Record<string, string> = {};
+      validationError.inner.forEach((err: any) => {
+        if (err.path) newErrors[err.path] = err.message;
+      });
+      setErrors(newErrors);
       return;
     }
 
-    const newProduct = {
-      ...productData,
-      id: Date.now(), // Generate a simple ID
-      price: parseFloat(productData.price),
-      originalPrice: productData.originalPrice
-        ? parseFloat(productData.originalPrice)
-        : undefined,
-      stock: parseInt(productData.stock),
-      rating: 0,
-      reviews: 0,
-      sales: 0,
-      views: 0,
-      image: productData.images[0] || sampleImages[0],
-    };
+    setIsSaving(true);
 
-    onSave?.(newProduct);
+    try {
+      const formData = new FormData();
+      formData.append('title', productData.name);
+      formData.append('description', productData.description);
+      formData.append('price', productData.price);
+      formData.append('originalPrice', productData.originalPrice || '');
+      formData.append('stockQuantity', productData.stock);
+      formData.append('organic', String(productData.isOrganic));
+      formData.append('featured', String(productData.isFeatured));
+      formData.append('status', productData.status);
+      formData.append('productType', productData.isOrganic ? 'organic' : 'conventional');
+      formData.append('category', productData.category);
+      uploadedFiles.forEach((file) => {
+        formData.append('productImages', file);
+      });
+      productData.tags.forEach(tag => {
+        formData.append('tags', tag);
+      });
+
+      const result = await createProduct(formData);
+      const resetForm = () => {
+        setProductData({
+          name: '',
+          price: '',
+          originalPrice: '',
+          category: '',
+          description: '',
+          stock: '',
+          tags: [] as string[],
+          images: [] as string[],
+          isOrganic: false,
+          isFeatured: false,
+          status: 'active',
+        });
+        setCurrentTag('');
+      };
+      if (result.success) {
+        console.log('Product created successfully:', result.data);
+
+        const newProduct = {
+          ...productData,
+          id: result.data?.id || Date.now(),
+          price: parseFloat(productData.price),
+          originalPrice: productData.originalPrice
+            ? parseFloat(productData.originalPrice)
+            : undefined,
+          stock: parseInt(productData.stock),
+          rating: 0,
+          reviews: 0,
+          sales: 0,
+          views: 0,
+          image: productData.images[0] || sampleImages[0],
+        };
+
+        onSave?.(newProduct);
+        alert('Product saved successfully!');
+        resetForm()
+      } else {
+        console.error('Failed to create product:', result.error);
+        alert(`Failed to create product: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert('An error occurred while saving the product');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -158,15 +261,26 @@ export default function AddProductPage({
                 variant="outline"
                 onClick={onBack}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                disabled={isSaving}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 className="bg-green-500 hover:bg-green-600 text-white"
+                disabled={isSaving}
               >
-                <Save className="w-4 h-4 mr-2" />
-                Save Product
+                {isSaving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Product
+                  </>
+                )}
               </Button>
             </>
           }
@@ -196,7 +310,9 @@ export default function AddProductPage({
                       }
                       placeholder="e.g., Organic Roma Tomatoes"
                       className="mt-1"
+                      disabled={isSaving}
                     />
+                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,7 +328,9 @@ export default function AddProductPage({
                         }
                         placeholder="4.99"
                         className="mt-1"
+                        disabled={isSaving}
                       />
+                      {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
                     </div>
                     <div>
                       <Label htmlFor="originalPrice">Original Price ($)</Label>
@@ -226,7 +344,11 @@ export default function AddProductPage({
                         }
                         placeholder="6.99"
                         className="mt-1"
+                        disabled={isSaving}
                       />
+                      {errors.originalPrice && (
+                        <p className="text-red-500 text-sm mt-1">{errors.originalPrice}</p>
+                      )}
                     </div>
                   </div>
 
@@ -238,7 +360,9 @@ export default function AddProductPage({
                         onValueChange={(value) =>
                           handleInputChange('category', value)
                         }
+                        disabled={isSaving}
                       >
+                        {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -262,7 +386,10 @@ export default function AddProductPage({
                         }
                         placeholder="50"
                         className="mt-1"
+                        disabled={isSaving}
                       />
+                      {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
+
                     </div>
                   </div>
 
@@ -277,7 +404,12 @@ export default function AddProductPage({
                       placeholder="Describe your product, growing methods, freshness, etc."
                       rows={4}
                       className="mt-1"
+                      disabled={isSaving}
                     />
+                    {errors.description && (
+                      <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+                    )}
+
                   </div>
                 </CardContent>
               </Card>
@@ -307,6 +439,7 @@ export default function AddProductPage({
                           variant="destructive"
                           className="absolute -top-2 -right-2 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => handleRemoveImage(image)}
+                          disabled={isSaving}
                         >
                           <X className="w-3 h-3" />
                         </Button>
@@ -329,6 +462,7 @@ export default function AddProductPage({
                           size="sm"
                           className="h-16 p-1 border-amber-300"
                           onClick={() => handleAddImage(image)}
+                          disabled={isSaving}
                         >
                           <ImageWithFallback
                             src={image}
@@ -346,6 +480,7 @@ export default function AddProductPage({
                           size="sm"
                           className="h-16 p-1 border-amber-300"
                           onClick={() => handleAddImage(image)}
+                          disabled={isSaving}
                         >
                           <ImageWithFallback
                             src={image}
@@ -355,15 +490,26 @@ export default function AddProductPage({
                         </Button>
                       ))}
                     </div>
-
-                    <Button
-                      variant="outline"
-                      disabled={isUploading}
-                      className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {isUploading ? 'Uploading...' : 'Upload Images'}
-                    </Button>
+                    <div className="relative inline-block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <Button
+                        asChild
+                        variant="outline"
+                        disabled={isUploading}
+                        className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                      >
+                        <span>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {isUploading ? 'Uploading...' : 'Upload Images'}
+                        </span>
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -386,11 +532,13 @@ export default function AddProductPage({
                       onChange={(e) => setCurrentTag(e.target.value)}
                       placeholder="Add a tag (e.g., organic, fresh, local)"
                       onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                      disabled={isSaving}
                     />
                     <Button
                       onClick={handleAddTag}
                       variant="outline"
                       className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                      disabled={isSaving}
                     >
                       <Plus className="w-4 h-4" />
                     </Button>
@@ -407,6 +555,7 @@ export default function AddProductPage({
                         <button
                           onClick={() => handleRemoveTag(tag)}
                           className="ml-2 hover:text-red-600"
+                          disabled={isSaving}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -439,6 +588,7 @@ export default function AddProductPage({
                       onCheckedChange={(checked) =>
                         handleInputChange('isOrganic', checked)
                       }
+                      disabled={isSaving}
                     />
                   </div>
 
@@ -450,6 +600,7 @@ export default function AddProductPage({
                       onCheckedChange={(checked) =>
                         handleInputChange('isFeatured', checked)
                       }
+                      disabled={isSaving}
                     />
                   </div>
 
@@ -460,6 +611,7 @@ export default function AddProductPage({
                       onValueChange={(value) =>
                         handleInputChange('status', value)
                       }
+                      disabled={isSaving}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue />
