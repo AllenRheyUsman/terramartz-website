@@ -1,4 +1,5 @@
 'use client';
+import ForgotPasswordModal from '@/modules/core/components/auth/ForgotPasswordModal';
 import { Button } from '@/modules/core/components/ui/button';
 import {
   Card,
@@ -9,23 +10,23 @@ import {
 } from '@/modules/core/components/ui/card';
 import { Input } from '@/modules/core/components/ui/input';
 import { Label } from '@/modules/core/components/ui/label';
+import Logo from '@/modules/core/components/ui/Logo';
 import { Separator } from '@/modules/core/components/ui/separator';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
 import { useState } from 'react';
-
 interface SignInPageProps {
-  onBack: () => void;
   onSignIn: (email: string, password: string) => void;
 }
 
-export default function SignInPage({ onBack, onSignIn }: SignInPageProps) {
+export default function SignInPage({ onSignIn }: SignInPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const router = useRouter();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +56,23 @@ export default function SignInPage({ onBack, onSignIn }: SignInPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-green-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Back Button */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-6"
+        >
+          <Link href="/">
+            <Button
+              variant="ghost"
+              className="text-gray-600 hover:text-amber-600 hover:bg-amber-50 p-2"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+          </Link>
+        </motion.div>
+
         {/* Sign In Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -63,11 +81,11 @@ export default function SignInPage({ onBack, onSignIn }: SignInPageProps) {
         >
           <Card className="bg-white/80 backdrop-blur-sm border-amber-200 shadow-xl">
             <CardHeader className="text-center space-y-2">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-white text-2xl">🌱</span>
+              <div className="mb-4 flex justify-center">
+                <Logo size="lg" showText={true} animate={false} />
               </div>
               <CardTitle className="text-2xl bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                Welcome to Terramartz
+                Welcome Back!
               </CardTitle>
               <CardDescription className="text-gray-600">
                 Sign in to your account to continue shopping
@@ -162,14 +180,19 @@ export default function SignInPage({ onBack, onSignIn }: SignInPageProps) {
 
               {/* Additional Options */}
               <div className="text-center space-y-2">
-                <button className="text-sm text-amber-600 hover:text-amber-700 transition-colors">
+                <button
+                  onClick={() => setShowForgotPasswordModal(true)}
+                  className="text-sm text-amber-600 hover:text-amber-700 transition-colors"
+                >
                   Forgot your password?
                 </button>
                 <div className="text-sm text-gray-600">
                   Don&apos;t have an account?{' '}
-                  <button className="text-amber-600 hover:text-amber-700 transition-colors">
-                    Sign Up
-                  </button>
+                  <Link href="/sign-up">
+                    <button className="text-amber-600 hover:text-amber-700 transition-colors">
+                      Sign Up
+                    </button>
+                  </Link>
                 </div>
               </div>
             </CardContent>
@@ -205,6 +228,12 @@ export default function SignInPage({ onBack, onSignIn }: SignInPageProps) {
           </div>
         </motion.div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </div>
   );
 }
