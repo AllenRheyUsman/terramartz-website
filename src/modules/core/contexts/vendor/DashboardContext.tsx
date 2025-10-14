@@ -10,8 +10,28 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
-import { createContext, JSX, ReactNode, useContext, useState } from 'react';
+import {
+  createContext,
+  JSX,
+  ReactNode,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
+import { getSalesAnalytics } from '@/modules/core/actions/sales.action';
 
+interface AnalyticsData {
+  status: string;
+  totalCustomers: number;
+  repeatCustomers: number;
+  averageOrderValue: number;
+  customerLifetimeValue: number;
+  lifetimeSales: { totalRevenue: number; totalOrders: number };
+  dailySales?: Record<string, number>;
+  weeklySales?: Record<string, number>;
+  monthlySales?: Record<string, number>;
+  yearlySales?: number;
+}
 interface DashboardContextProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -25,6 +45,14 @@ interface DashboardContextProps {
   // data
   sellerProducts: ProductWithSellerData[];
   recentOrders: OrderWithSellerData[];
+
+  // analytics
+  analytics: AnalyticsData | null;
+  loadingAnalytics: boolean;
+  analyticsError: string | null;
+  year: number;
+  setYear: (year: number) => void;
+  refreshAnalytics: (year?: number) => Promise<void>;
 
   // helpers
   getStatusColor: (status: string) => string;
@@ -42,6 +70,34 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   );
   const [deleteProduct, setDeleteProduct] =
     useState<ProductWithSellerData | null>(null);
+
+  // --- Analytics state ---
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  const refreshAnalytics = async (selectedYear?: number) => {
+    setLoadingAnalytics(true);
+    setAnalyticsError(null);
+    try {
+      const res = await getSalesAnalytics(selectedYear || year);
+      if (res.success && res.status === 'success') {
+        setAnalytics(res);
+      } else {
+        setAnalyticsError(res.error || 'Failed to fetch analytics');
+      }
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setAnalyticsError('Something went wrong while loading analytics');
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshAnalytics(year);
+  }, []);
 
   const recentOrders: OrderWithSellerData[] = [
     {
@@ -186,6 +242,12 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         setDeleteProduct,
         sellerProducts,
         recentOrders,
+        analytics,
+        loadingAnalytics,
+        analyticsError,
+        year,
+        setYear,
+        refreshAnalytics,
         getStatusColor,
         getStatusIcon,
       }}
