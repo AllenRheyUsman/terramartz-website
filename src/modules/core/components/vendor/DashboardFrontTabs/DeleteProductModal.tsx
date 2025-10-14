@@ -4,7 +4,7 @@ import { AlertCircle, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const DeleteProductModal = () => {
-  const { deleteProduct, setDeleteProduct } = useDashboard();
+  const { deleteProduct, setDeleteProduct, handleDeleteProduct } = useDashboard();
 
   if (!deleteProduct) return null;
 
@@ -56,9 +56,8 @@ export const DeleteProductModal = () => {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                // Handle delete logic here
-                console.log('Deleting product:', deleteProduct.id);
+              onClick={async () => {
+                await handleDeleteProduct(deleteProduct.id);
                 setDeleteProduct(null);
               }}
               className="bg-red-600 hover:bg-red-700 text-white"

@@ -24,7 +24,7 @@ export const OverviewTab = ({
   getStatusColor: (status: string) => string;
   getStatusIcon: (status: string) => JSX.Element;
 }) => {
-  const { setActiveTab } = useDashboard();
+  const { setActiveTab, loadingProducts } = useDashboard();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -89,39 +89,46 @@ export const OverviewTab = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {sellerProducts
-              .sort((a, b) => b.sales - a.sales)
-              .slice(0, 4)
-              .map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg"
-                >
-                  <ImageWithFallback
-                    src={product.image}
-                    alt={product.name}
-                    className="w-12 h-12 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-600">
-                      {product.sales} sold
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-green-600">
-                      ${product.price}
-                    </p>
-                    <div className="flex items-center text-xs text-gray-600">
-                      <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
-                      {product.rating}
+          {loadingProducts ? (
+            <div className="flex justify-center py-8 text-gray-500 text-sm">
+              Loading top products...
+            </div>
+          ) : sellerProducts.length === 0 ? (
+            <div className="flex justify-center py-8 text-gray-500 text-sm">
+              No products available.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sellerProducts
+                .sort((a, b) => b.sales - a.sales)
+                .slice(0, 4)
+                .map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg"
+                  >
+                    <ImageWithFallback
+                      src={product.image}
+                      alt={product.name}
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{product.name}</p>
+                      <p className="text-sm text-gray-600">{product.sales} sold</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-green-600">${product.price}</p>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
+                        {product.rating}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-          </div>
+                ))}
+            </div>
+          )}
         </CardContent>
+
       </Card>
     </div>
   );
