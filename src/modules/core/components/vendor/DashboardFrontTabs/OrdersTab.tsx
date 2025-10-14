@@ -24,13 +24,19 @@ export const OrdersTab = ({
       <CardHeader>
         <CardTitle>Order Management</CardTitle>
       </CardHeader>
+
       <CardContent>
         <div className="space-y-4">
+          {recentOrders.length === 0 && (
+            <p className="text-gray-500 text-center py-8">No orders found.</p>
+          )}
+
           {recentOrders.map((order) => (
             <div
               key={order.id}
               className="border border-amber-200 rounded-lg p-4"
             >
+              {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
@@ -38,30 +44,49 @@ export const OrdersTab = ({
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">{order.id}</h3>
-                    <p className="text-sm text-gray-600">{order.customer}</p>
+                    <p className="text-sm text-gray-600">
+                      {order.customer || 'Unknown Customer'}
+                    </p>
                   </div>
                 </div>
+
                 <div className="text-right">
                   <p className="font-medium text-gray-900">
                     ${order.total.toFixed(2)}
                   </p>
-                  <Badge className={`text-xs ${getStatusColor(order.status)}`}>
+                  <Badge
+                    className={`text-xs capitalize ${getStatusColor(
+                      order.status,
+                    )}`}
+                  >
                     {order.status}
                   </Badge>
                 </div>
               </div>
+
+              {/* Details */}
               <div className="space-y-2 text-sm text-gray-600">
                 <p>
-                  <strong>Products:</strong> {order.items.join(', ')}
+                  <strong>Products:</strong>{' '}
+                  {Array.isArray(order.items) && order.items.length > 0
+                    ? order.items.join(', ')
+                    : 'No products listed'}
                 </p>
+
                 <p>
                   <strong>Date:</strong>{' '}
                   {new Date(order.date).toLocaleDateString()}
                 </p>
+
                 <p>
-                  <strong>Address:</strong> {order.address}
+                  <strong>Address:</strong>{' '}
+                  {typeof order.address === 'string'
+                    ? order.address
+                    : 'Address not provided'}
                 </p>
               </div>
+
+              {/* Actions */}
               <div className="flex items-center space-x-2 mt-3">
                 {order.status === 'pending' && (
                   <Button
@@ -71,6 +96,7 @@ export const OrdersTab = ({
                     Accept Order
                   </Button>
                 )}
+
                 {order.status === 'processing' && (
                   <Button
                     size="sm"
@@ -79,6 +105,7 @@ export const OrdersTab = ({
                     Mark as Shipped
                   </Button>
                 )}
+
                 <Button
                   variant="outline"
                   size="sm"
