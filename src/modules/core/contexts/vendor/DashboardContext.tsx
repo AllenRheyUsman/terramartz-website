@@ -1,5 +1,4 @@
 'use client';
-
 import { OrderWithSellerData } from '@/modules/core/types/order';
 import { ProductWithSellerData } from '@/modules/core/types/product';
 import {
@@ -10,8 +9,29 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
-import { createContext, JSX, ReactNode, useContext, useState } from 'react';
+import {
+  createContext,
+  JSX,
+  ReactNode,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
+import { getSalesAnalytics } from '@/modules/core/actions/sales.action';
+import { getProducts, deleteProducts } from '../../actions/product.action';
 
+interface AnalyticsData {
+  status: string;
+  totalCustomers: number;
+  repeatCustomers: number;
+  averageOrderValue: number;
+  customerLifetimeValue: number;
+  lifetimeSales: { totalRevenue: number; totalOrders: number };
+  dailySales?: Record<string, number>;
+  weeklySales?: Record<string, number>;
+  monthlySales?: Record<string, number>;
+  yearlySales?: number;
+}
 interface DashboardContextProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -21,14 +41,24 @@ interface DashboardContextProps {
   setViewProduct: (product: ProductWithSellerData | null) => void;
   deleteProduct: ProductWithSellerData | null;
   setDeleteProduct: (product: ProductWithSellerData | null) => void;
+  handleDeleteProduct: (productId: string | number) => Promise<void>;
 
   // data
   sellerProducts: ProductWithSellerData[];
   recentOrders: OrderWithSellerData[];
 
+  // analytics
+  analytics: AnalyticsData | null;
+  loadingAnalytics: boolean;
+  analyticsError: string | null;
+  year: number;
+  setYear: (year: number) => void;
+  refreshAnalytics: (year?: number) => Promise<void>;
+
   // helpers
   getStatusColor: (status: string) => string;
   getStatusIcon: (status: string) => JSX.Element;
+  loadingProducts: boolean;
 }
 
 const DashboardContext = createContext<DashboardContextProps | undefined>(
@@ -42,6 +72,117 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   );
   const [deleteProduct, setDeleteProduct] =
     useState<ProductWithSellerData | null>(null);
+  const [sellerProducts, setSellerProducts] = useState<ProductWithSellerData[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+
+  // --- Analytics state ---
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  const refreshAnalytics = async (selectedYear?: number) => {
+    setLoadingAnalytics(true);
+    setAnalyticsError(null);
+    try {
+      const res = await getSalesAnalytics(selectedYear || year);
+      if (res.success && res.status === 'success') {
+        setAnalytics(res);
+      } else {
+        setAnalyticsError(res.error || 'Failed to fetch analytics');
+      }
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setAnalyticsError('Something went wrong while loading analytics');
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  const fetchSellerProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const res = await getProducts(1, 10);
+
+      if (res.success && res.data) {
+        const productsArray = Array.isArray(res.data)
+          ? res.data
+          : res.data.products || [];
+        const normalized = productsArray.map((p: any) => ({
+          id: p._id,
+          name: p.title,
+          description: p.description,
+          price: p.price,
+          originalPrice: p.originalPrice,
+          category: p.category?.name || 'Uncategorized',
+          stock: p.stockQuantity || p.performance?.currentStock || 0,
+          sales: p.totalSold || p.performance?.totalSales || 0,
+          rating: p.performance?.rating || 0,
+          views: p.performance?.views || 0,
+          status: p.status,
+          image: p.productImages?.[0] || '/images/placeholder.png',
+          seller: p.seller,
+        }));
+
+        setSellerProducts(normalized);
+      } else {
+        console.error('Failed to load seller products:', res.error);
+      }
+    } catch (err) {
+      console.error('Error fetching seller products:', err);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string | number) => {
+    try {
+      const res = await deleteProducts(String(productId));
+      if (res.success) {
+        setSellerProducts((prev) =>
+          prev.filter((p) => String(p.id) !== String(productId))
+        );
+        console.log('Product deleted successfully');
+      } else {
+        console.error('Failed to delete product:', res.error);
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshAnalytics(year);
+    fetchSellerProducts();
+  }, []);
+
+  // --- Analytics state ---
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  const refreshAnalytics = async (selectedYear?: number) => {
+    setLoadingAnalytics(true);
+    setAnalyticsError(null);
+    try {
+      const res = await getSalesAnalytics(selectedYear || year);
+      if (res.success && res.status === 'success') {
+        setAnalytics(res);
+      } else {
+        setAnalyticsError(res.error || 'Failed to fetch analytics');
+      }
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setAnalyticsError('Something went wrong while loading analytics');
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshAnalytics(year);
+  }, []);
 
   const recentOrders: OrderWithSellerData[] = [
     {
@@ -82,60 +223,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     },
   ];
 
-  const sellerProducts: ProductWithSellerData[] = [
-    {
-      id: 1,
-      name: 'Organic Tomatoes',
-      price: 4.99,
-      stock: 50,
-      category: 'Vegetables',
-      status: 'in-stock',
-      sales: 234,
-      rating: 4.8,
-      image:
-        'https://images.unsplash.com/photo-1757332334678-e76d258c49c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMG9yZ2FuaWMlMjB0b21hdG9lc3xlbnwxfHx8fDE3NTg1NDYzNTZ8MA&ixlib=rb-4.1.0&q=80&w=400',
-      views: 1234,
-    },
-    {
-      id: 2,
-      name: 'Fresh Basil',
-      price: 2.99,
-      stock: 0,
-      category: 'Herbs',
-      status: 'out-of-stock',
-      sales: 156,
-      rating: 4.9,
-      image:
-        'https://images.unsplash.com/photo-1662422325326-19089df23d98?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGhlcmJzJTIwYmFzaWx8ZW58MXx8fHwxNzU4NTQ2Mzc4fDA&ixlib=rb-4.1.0&q=80&w=400',
-      views: 856,
-    },
-    {
-      id: 3,
-      name: 'Organic Spinach',
-      price: 3.49,
-      stock: 30,
-      category: 'Vegetables',
-      status: 'in-stock',
-      sales: 189,
-      rating: 4.7,
-      image:
-        'https://images.unsplash.com/photo-1602193815349-525071f27564?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvcmdhbmljJTIwc3BpbmFjaCUyMGxlYXZlc3xlbnwxfHx8fDE3NTg1NDYzODF8MA&ixlib=rb-4.1.0&q=80&w=400',
-      views: 2134,
-    },
-    {
-      id: 4,
-      name: 'Fresh Strawberries',
-      price: 6.99,
-      stock: 25,
-      category: 'Fruits',
-      status: 'in-stock',
-      sales: 298,
-      rating: 4.9,
-      image:
-        'https://images.unsplash.com/photo-1710528184650-fc75ae862c13?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHN0cmF3YmVycmllcyUyMGJlcnJpZXN8ZW58MXx8fHwxNzU4NTQ2Mzc0fDA&ixlib=rb-4.1.0&q=80&w=400',
-      views: 1789,
-    },
-  ];
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -186,8 +273,16 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         setDeleteProduct,
         sellerProducts,
         recentOrders,
+        analytics,
+        loadingAnalytics,
+        analyticsError,
+        year,
+        setYear,
+        refreshAnalytics,
         getStatusColor,
         getStatusIcon,
+        handleDeleteProduct,
+        loadingProducts,
       }}
     >
       {children}
