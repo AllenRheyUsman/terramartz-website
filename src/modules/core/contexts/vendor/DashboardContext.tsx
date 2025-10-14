@@ -156,6 +156,34 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     fetchSellerProducts();
   }, []);
 
+  // --- Analytics state ---
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  const refreshAnalytics = async (selectedYear?: number) => {
+    setLoadingAnalytics(true);
+    setAnalyticsError(null);
+    try {
+      const res = await getSalesAnalytics(selectedYear || year);
+      if (res.success && res.status === 'success') {
+        setAnalytics(res);
+      } else {
+        setAnalyticsError(res.error || 'Failed to fetch analytics');
+      }
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setAnalyticsError('Something went wrong while loading analytics');
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshAnalytics(year);
+  }, []);
+
   const recentOrders: OrderWithSellerData[] = [
     {
       id: 'ORD-2024-001',
