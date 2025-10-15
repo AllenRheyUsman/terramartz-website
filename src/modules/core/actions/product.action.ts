@@ -78,41 +78,41 @@ export async function getProducts(page = 1, limit = 5) {
   }
 }
 
-// export async function updateProduct(productId: string, formData: FormData) {
-//   try {
-//     const cookieStore = await cookies();
-//     const token = cookieStore.get("token")?.value;
+export async function updateProduct(productId: string, formData: FormData) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
 
-//     if (!token) {
-//       console.error("No token found in cookies");
-//       return { success: false, error: "Authentication token missing" };
-//     }
+    if (!token) {
+      console.error("No token found in cookies");
+      return { success: false, error: "Authentication token missing" };
+    }
 
-//     const res = await fetch(`${API_URL}/api/products/${productId}`, {
-//       method: "PATCH",
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: formData,
-//       cache: "no-store",
-//     });
+    const res = await fetch(`${API_URL}/api/products/${productId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+      cache: "no-store",
+    });
 
-//     const data = await res.json().catch(() => null);
+    const data = await res.json().catch(() => null);
 
-//     if (!res.ok) {
-//       console.error("Update product failed:", data);
-//       return {
-//         success: false,
-//         error: data?.message || "Failed to update product",
-//       };
-//     }
+    if (!res.ok) {
+      console.error("Update product failed:", data);
+      return {
+        success: false,
+        error: data?.message || "Failed to update product",
+      };
+    }
 
-//     return { success: true, data };
-//   } catch (err) {
-//     console.error("updateProduct error:", err);
-//     return { success: false, error: "Something went wrong" };
-//   }
-// }   YET NOT DESIGNED NEED TO Migrate the design
+    return { success: true, data };
+  } catch (err) {
+    console.error("updateProduct error:", err);
+    return { success: false, error: "Something went wrong" };
+  }
+}
 
 export async function deleteProducts(productId: string) {
   try {
