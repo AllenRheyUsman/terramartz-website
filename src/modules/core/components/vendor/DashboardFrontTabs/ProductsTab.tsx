@@ -98,14 +98,20 @@ export const ProductsTab = ({
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-amber-600 hover:bg-amber-50"
-                        onClick={() => onEditProduct?.(product)}
+                      <Link
+                        href={`/vendor/product/new/${product.id}`}
+                        onClick={(e) => {
+                          onEditProduct?.(product);
+                        }}
                       >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-amber-600 hover:bg-amber-50"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -122,7 +128,6 @@ export const ProductsTab = ({
           </div>
         )}
       </CardContent>
-
     </Card>
   );
 };
